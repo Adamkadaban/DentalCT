@@ -78,7 +78,7 @@ async function init(){
   S.wc = m.window_center; S.ww = m.window_width;
   set("#wc", S.wc, "#wcv"); set("#ww", S.ww, "#wwv");
   for (const p of ["axial","coronal","sagittal"]){
-    const el=document.querySelector(`.pane[data-plane=${p}]`);
+    const el=document.querySelector(`.pane[data-plane='${p}']`);
     const img=el.querySelector("img"), sl=el.querySelector("input");
     const n=m.nslices[p]; sl.max=n-1; sl.value=S.idx[p]=Math.floor(n/2);
     panes[p]={el,img,slider:sl,lbl:el.querySelector(".lbl")};
@@ -119,7 +119,7 @@ function dragWL(img){
 // ---- 4th pane: WebGL2 ray-marched 3D volume ---------------------------
 let renderer=null;
 async function init3d(){
-  const pane=document.querySelector('.pane[data-plane=3d]');
+  const pane=document.querySelector('.pane[data-plane="3d"]');
   const cv=pane.querySelector("canvas"), lbl=pane.querySelector(".lbl");
   renderer=await initVolume(cv,lbl,()=>({wc:S.wc,ww:S.ww}));
   if(!renderer)return;
