@@ -56,17 +56,17 @@
     <img alt="sagittal"><div class="sl"><input type="range" min="0" value="0"></div>
   </div>
   <div class="pane" data-plane="3d">
-    <div class="head">3D MIP <span class="lbl"></span></div>
-    <canvas></canvas><div class="sl"><input type="range" min="0" max="2" value="1" title="rotate / project axis"></div>
+    <div class="head">3D <span class="lbl"></span> · <button id="d3mode">Bone</button></div>
+    <canvas></canvas><div class="sl"><input id="d3thr" type="range" min="5" max="95" value="45" title="bone threshold"></div>
   </div>
 </div>
 
-<script>
+<script type="module">
+import {initVolume} from "./vol3d.js";
 // ---- state -------------------------------------------------------------
 const S = {wc:1048, ww:4096, thk:1, mode:"avg", idx:{axial:0,coronal:0,sagittal:0}, meta:null};
 const $ = s => document.querySelector(s);
 const panes = {};                       // plane -> {el,img,slider,lbl}
-const proj = ["sagittal","coronal","axial"];  // 3d rotate-slider -> projection axis
 
 // ---- init: fetch metadata & wire panes --------------------------------
 async function init(){
@@ -116,35 +116,16 @@ function dragWL(img){
   window.addEventListener("mouseup",()=>on=false);
 }
 
-// ---- 4th pane: in-browser MIP from downsampled volume -----------------
-let vol3d=null, dims=null;
+// ---- 4th pane: WebGL2 ray-marched 3D volume ---------------------------
+let renderer=null;
 async function init3d(){
   const pane=document.querySelector('.pane[data-plane=3d]');
-  const cv=pane.querySelector("canvas"), sl=pane.querySelector("input"), lbl=pane.querySelector(".lbl");
-  try{
-    const r=await fetch("/api/volume3d?factor=4");
-    dims=r.headers.get("X-Dims").split(",").map(Number);          // [z,y,x]
-    vol3d=new Int16Array(await r.arrayBuffer());
-    sl.oninput=()=>renderMip(cv,+sl.value,lbl); renderMip(cv,1,lbl);
-  }catch(err){lbl.textContent="(3D unavailable)";}
-}
-function renderMip(cv,axis,lbl){                                  // 0 sag,1 cor,2 ax
-  const [z,y,x]=dims, lo=S.wc-S.ww/2, hi=S.wc+S.ww/2;
-  const V=(a,b,c)=>vol3d[(a*y+b)*x+c];                            // V(z,y,x)
-  let w,h, flip = axis!==2;                                       // sup-up for sag/cor
-  if(axis===0){w=y;h=z;} else if(axis===1){w=x;h=z;} else {w=x;h=y;}
-  cv.width=w;cv.height=h;const im=new ImageData(w,h);
-  for(let i=0;i<h;i++)for(let j=0;j<w;j++){
-    let mx=-32768;
-    if(axis===0){for(let c=0;c<x;c++){const v=V(i,j,c);if(v>mx)mx=v;}}        // over x
-    else if(axis===1){for(let b=0;b<y;b++){const v=V(i,b,j);if(v>mx)mx=v;}}   // over y
-    else{for(let a=0;a<z;a++){const v=V(a,i,j);if(v>mx)mx=v;}}                // over z
-    const g=Math.max(0,Math.min(255,(mx-lo)/(hi-lo)*255));
-    const k=((flip?h-1-i:i)*w+j)*4;
-    im.data[k]=im.data[k+1]=im.data[k+2]=g;im.data[k+3]=255;
-  }
-  cv.getContext("2d").putImageData(im,0,0);
-  lbl.textContent=proj[axis]+" MIP";
+  const cv=pane.querySelector("canvas"), lbl=pane.querySelector(".lbl");
+  renderer=await initVolume(cv,lbl,()=>({wc:S.wc,ww:S.ww}));
+  if(!renderer)return;
+  $("#d3thr").oninput=e=>renderer.setThr(+e.target.value/100);
+  $("#d3mode").onclick=e=>{const b=e.target;const mip=b.textContent==="Bone";
+    b.textContent=mip?"MIP":"Bone";b.classList.toggle("on",mip);renderer.setMode(mip?1:0);};
 }
 init();
 </script>
