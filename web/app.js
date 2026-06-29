@@ -24,16 +24,19 @@ function start(vol, meta){
   drop.style.display="none"; $("#grid").style.display="grid";
   $("#info").textContent=`${meta.model} · ${x}×${y}×${z} · ${meta.spacing_mm.map(v=>v.toFixed(2)).join("×")}mm`;
   ["axial","coronal","sagittal"].forEach(p=>{const pane=document.querySelector(`.pane[data-plane="${p}"]`);
-    pane._cv=pane.querySelector("canvas"); link(pane._cv,p); drawWL(pane._cv); draw(p);});
+    pane._cv=pane.querySelector("canvas"); const sl=pane.querySelector(".sl"); sl.max=S.smp.nslices[p]-1; sl.value=S.idx[p];
+    sl.oninput=()=>{S.idx[p]=+sl.value; draw(p);}; pane._sl=sl; link(pane._cv,p); drawWL(pane._cv); draw(p);});
   // downsample for 3D
   const f=2,dz=z+1>>1,dy=y+1>>1,dx=x+1>>1,d=new Int16Array(dz*dy*dx);
   for(let k=0;k<dz;k++)for(let j=0;j<dy;j++)for(let i=0;i<dx;i++)d[(k*dy+j)*dx+i]=vol[((k*2)*y+j*2)*x+i*2];
   initVolume(document.querySelector('.pane[data-plane="3d"] canvas'),$("#info"),{vol:d,z:dz,y:dy,x:dx})
-    .then(r=>{S.r=r; $("#d3mode").onclick=e=>{const m=e.target.textContent==="Bone";e.target.textContent=m?"MIP":"Bone";r.setMode(m?1:0);};});
+    .then(r=>{S.r=r; $("#d3mode").onclick=e=>{const m=e.target.textContent==="Bone";e.target.textContent=m?"MIP":"Bone";r.setMode(m?1:0);};
+      $("#d3thr").oninput=e=>r.setThr(+e.target.value/100);});
 }
 function paint(cv,img){cv.width=img.width;cv.height=img.height;cv.getContext("2d").putImageData(img,0,0);}
 function draw(p){paint(document.querySelector(`.pane[data-plane="${p}"] canvas`),S.smp.slice(p,S.idx[p],S.wc,S.ww));
-  const l=document.querySelector(`.pane[data-plane="${p}"] .lbl`);l.textContent=`${S.idx[p]+1}/${S.smp.nslices[p]}`;}
+  const pane=document.querySelector(`.pane[data-plane="${p}"]`),sl=pane.querySelector(".sl"); if(sl)sl.value=S.idx[p];
+  pane.querySelector(".lbl").textContent=`${S.idx[p]+1}/${S.smp.nslices[p]}`;}
 function drawAll(){["axial","coronal","sagittal"].forEach(draw);
   if($("#pano").style.display!=="none")pano(); if($("#custom").style.display!=="none")cross(); if($("#oblique").style.display!=="none")ob();}
 
