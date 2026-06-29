@@ -21,7 +21,7 @@ function start(vol, meta){
   S.wc=meta.window_center; S.ww=meta.window_width; $("#wc").value=S.wc; $("#ww").value=S.ww;
   S.idx={axial:z>>1,coronal:y>>1,sagittal:x>>1};
   if(meta.xml) S.ov=parseOverlays(meta.xml);
-  drop.style.display="none"; $("#grid").style.display="grid";
+   drop.style.display="none"; document.body.classList.add("loaded"); $("#grid").style.display="grid";
   $("#info").textContent=`${meta.model} · ${x}×${y}×${z} · ${meta.spacing_mm.map(v=>v.toFixed(2)).join("×")}mm`;
   ["axial","coronal","sagittal"].forEach(p=>{const pane=document.querySelector(`.pane[data-plane="${p}"]`);
     pane._cv=pane.querySelector("canvas"); const sl=pane.querySelector(".sl"); sl.max=S.smp.nslices[p]-1; sl.value=S.idx[p];
