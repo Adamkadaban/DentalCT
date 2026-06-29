@@ -24,3 +24,7 @@ A reader/visualizer for a Carestream **CS 8100 3D** CBCT scan exported by **CS 3
 
 ## Prior art reviewed
 Cornerstone3D/OHIF, Kitware VolView, VTK — all validate load→MPR+3D. We build custom, scoped to this scan.
+
+## Running
+Server runs as a user service (foreground blocks the shell): `dentalct.service`
+-> `systemctl --user start|stop|status dentalct`, listens on localhost:8000.

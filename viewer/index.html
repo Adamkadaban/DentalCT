@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DentalCT Viewer</title>
+<style>
+  :root{--bg:#0d0f12;--pane:#15181d;--line:#262b33;--txt:#cdd3da;--accent:#4ea1ff}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);font:13px/1.4 system-ui,sans-serif;height:100vh;display:flex;flex-direction:column}
+  header{display:flex;gap:18px;align-items:center;flex-wrap:wrap;padding:8px 14px;background:var(--pane);border-bottom:1px solid var(--line)}
+  header b{color:#fff} header .mono{font-family:ui-monospace,monospace;color:#8b95a1}
+  .ctrls{display:flex;gap:14px;align-items:center;flex-wrap:wrap;padding:6px 14px;background:#11141a;border-bottom:1px solid var(--line)}
+  .ctrls label{display:flex;flex-direction:column;font-size:11px;color:#8b95a1}
+  .ctrls input[type=range]{width:130px} .ctrls span{color:var(--txt)}
+  button{background:#1d2630;color:var(--txt);border:1px solid var(--line);border-radius:5px;padding:5px 9px;cursor:pointer}
+  button:hover{border-color:var(--accent)} button.on{background:var(--accent);color:#000;border-color:var(--accent)}
+  #grid{flex:1;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:2px;background:#000;min-height:0}
+  .pane{position:relative;background:#000;display:flex;flex-direction:column;overflow:hidden}
+  .pane .head{position:absolute;top:4px;left:6px;z-index:2;font-size:11px;text-shadow:0 0 4px #000;pointer-events:none}
+  .pane img,.pane canvas{flex:1;width:100%;height:100%;object-fit:contain;display:block;cursor:crosshair}
+  .pane .sl{position:absolute;bottom:6px;left:6px;right:6px;z-index:2}
+  .pane .sl input{width:100%}
+</style>
+</head>
+<body>
+<header>
+  <b>DentalCT</b>
+  <span class="mono" id="model">model:…</span>
+  <span class="mono" id="vox">voxel:…</span>
+  <span class="mono" id="hu">HU:…</span>
+</header>
+
+<div class="ctrls">
+  <label>Center <input id="wc" type="range" min="-1000" max="3000" value="1048"><span id="wcv">1048</span></label>
+  <label>Width <input id="ww" type="range" min="1" max="6000" value="4096"><span id="wwv">4096</span></label>
+  <label>Slab <input id="thk" type="range" min="1" max="40" value="1"><span id="thkv">1</span></label>
+  <button data-wc="1048" data-ww="4096">Bone</button>
+  <button data-wc="400" data-ww="1500">Soft</button>
+  <button data-wc="2000" data-ww="4000">Teeth</button>
+  <button id="mode">AVG</button>
+  <span class="mono">drag pane = window/level</span>
+</div>
+
+<div id="grid">
+  <div class="pane" data-plane="axial">
+    <div class="head">axial <span class="lbl"></span></div>
+    <img alt="axial"><div class="sl"><input type="range" min="0" value="0"></div>
+  </div>
+  <div class="pane" data-plane="coronal">
+    <div class="head">coronal <span class="lbl"></span></div>
+    <img alt="coronal"><div class="sl"><input type="range" min="0" value="0"></div>
+  </div>
+  <div class="pane" data-plane="sagittal">
+    <div class="head">sagittal <span class="lbl"></span></div>
+    <img alt="sagittal"><div class="sl"><input type="range" min="0" value="0"></div>
+  </div>
+  <div class="pane" data-plane="3d">
+    <div class="head">3D MIP <span class="lbl"></span></div>
+    <canvas></canvas><div class="sl"><input type="range" min="0" max="2" value="1" title="rotate / project axis"></div>
+  </div>
+</div>
+
+<script>
+// ---- state -------------------------------------------------------------
+const S = {wc:1048, ww:4096, thk:1, mode:"avg", idx:{axial:0,coronal:0,sagittal:0}, meta:null};
+const $ = s => document.querySelector(s);
+const panes = {};                       // plane -> {el,img,slider,lbl}
+const proj = ["sagittal","coronal","axial"];  // 3d rotate-slider -> projection axis
+
+// ---- init: fetch metadata & wire panes --------------------------------
+async function init(){
+  S.meta = await (await fetch("/api/meta")).json();
+  const m = S.meta;
+  $("#model").textContent = "model: " + (m.model||"?");
+  $("#vox").textContent = "voxel mm: " + m.spacing_mm.map(v=>v.toFixed(2)).join(" x ");
+  $("#hu").textContent  = "HU " + m.hu_min + "…" + m.hu_max;
+  S.wc = m.window_center; S.ww = m.window_width;
+  set("#wc", S.wc, "#wcv"); set("#ww", S.ww, "#wwv");
+  for (const p of ["axial","coronal","sagittal"]){
+    const el=document.querySelector(`.pane[data-plane=${p}]`);
+    const img=el.querySelector("img"), sl=el.querySelector("input");
+    const n=m.nslices[p]; sl.max=n-1; sl.value=S.idx[p]=Math.floor(n/2);
+    panes[p]={el,img,slider:sl,lbl:el.querySelector(".lbl")};
+    sl.oninput=()=>{S.idx[p]=+sl.value; refresh(p);};
+    dragWL(img); refresh(p);
+  }
+  init3d();
+}
+function set(sel,val,out){const e=$(sel);e.value=val;if(out)$(out).textContent=val;}
+
+// ---- 2D slice reload ---------------------------------------------------
+function refresh(p){
+  const q=`plane=${p}&idx=${S.idx[p]}&wc=${S.wc}&ww=${S.ww}&thk=${S.thk}&mode=${S.mode}`;
+  panes[p].img.src="/api/slice?"+q+"&t="+Date.now();
+  panes[p].lbl.textContent=`${S.idx[p]+1}/${S.meta.nslices[p]}`;
+}
+function refreshAll(){["axial","coronal","sagittal"].forEach(refresh);}
+
+// ---- global controls ---------------------------------------------------
+$("#wc").oninput=e=>{S.wc=+e.target.value;$("#wcv").textContent=S.wc;refreshAll();};
+$("#ww").oninput=e=>{S.ww=+e.target.value;$("#wwv").textContent=S.ww;refreshAll();};
+$("#thk").oninput=e=>{S.thk=+e.target.value;$("#thkv").textContent=S.thk;refreshAll();};
+$("#mode").onclick=e=>{const b=e.target;const mip=b.textContent==="AVG";b.textContent=mip?"MIP":"AVG";b.classList.toggle("on",mip);S.mode=mip?"mip":"avg";refreshAll();};
+document.querySelectorAll("button[data-wc]").forEach(b=>b.onclick=()=>{
+  S.wc=+b.dataset.wc;S.ww=+b.dataset.ww;set("#wc",S.wc,"#wcv");set("#ww",S.ww,"#wwv");refreshAll();
+});
+
+// ---- mouse drag = window/level ----------------------------------------
+function dragWL(img){
+  let x0,y0,wc0,ww0,on=false;
+  img.onmousedown=e=>{on=true;x0=e.clientX;y0=e.clientY;wc0=S.wc;ww0=S.ww;e.preventDefault();};
+  window.addEventListener("mousemove",e=>{if(!on)return;
+    S.wc=Math.round(wc0+(e.clientY-y0)*4); S.ww=Math.max(1,Math.round(ww0+(e.clientX-x0)*8));
+    set("#wc",S.wc,"#wcv");set("#ww",S.ww,"#wwv");refreshAll();});
+  window.addEventListener("mouseup",()=>on=false);
+}
+
+// ---- 4th pane: in-browser MIP from downsampled volume -----------------
+let vol3d=null, dims=null;
+async function init3d(){
+  const pane=document.querySelector('.pane[data-plane=3d]');
+  const cv=pane.querySelector("canvas"), sl=pane.querySelector("input"), lbl=pane.querySelector(".lbl");
+  try{
+    const r=await fetch("/api/volume3d?factor=4");
+    dims=r.headers.get("X-Dims").split(",").map(Number);          // [z,y,x]
+    vol3d=new Int16Array(await r.arrayBuffer());
+    sl.oninput=()=>renderMip(cv,+sl.value,lbl); renderMip(cv,1,lbl);
+  }catch(err){lbl.textContent="(3D unavailable)";}
+}
+function renderMip(cv,axis,lbl){                                  // 0 sag,1 cor,2 ax
+  const [z,y,x]=dims, lo=S.wc-S.ww/2, hi=S.wc+S.ww/2;
+  const V=(a,b,c)=>vol3d[(a*y+b)*x+c];                            // V(z,y,x)
+  let w,h, flip = axis!==2;                                       // sup-up for sag/cor
+  if(axis===0){w=y;h=z;} else if(axis===1){w=x;h=z;} else {w=x;h=y;}
+  cv.width=w;cv.height=h;const im=new ImageData(w,h);
+  for(let i=0;i<h;i++)for(let j=0;j<w;j++){
+    let mx=-32768;
+    if(axis===0){for(let c=0;c<x;c++){const v=V(i,j,c);if(v>mx)mx=v;}}        // over x
+    else if(axis===1){for(let b=0;b<y;b++){const v=V(i,b,j);if(v>mx)mx=v;}}   // over y
+    else{for(let a=0;a<z;a++){const v=V(a,i,j);if(v>mx)mx=v;}}                // over z
+    const g=Math.max(0,Math.min(255,(mx-lo)/(hi-lo)*255));
+    const k=((flip?h-1-i:i)*w+j)*4;
+    im.data[k]=im.data[k+1]=im.data[k+2]=g;im.data[k+3]=255;
+  }
+  cv.getContext("2d").putImageData(im,0,0);
+  lbl.textContent=proj[axis]+" MIP";
+}
+init();
+</script>
+</body>
+</html>
