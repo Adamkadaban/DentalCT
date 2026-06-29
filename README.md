@@ -1,7 +1,6 @@
 <h1 align="center">DentalCT</h1>
 <p align="center">A dental CBCT viewer that runs entirely in your browser.</p>
 <p align="center">
-  <a href="https://3dct.hackback.zip"><img alt="live" src="https://img.shields.io/badge/live-3dct.hackback.zip-2563eb"></a>
   <a href="./LICENSE"><img alt="License" src="https://img.shields.io/badge/license-MIT-3178c6"></a>
   <img alt="100% local" src="https://img.shields.io/badge/data-100%25_local-2e7d32">
   <img alt="made with vibes" src="https://img.shields.io/badge/made_with-vibes-ff69b4">
