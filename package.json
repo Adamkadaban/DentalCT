@@ -1,5 +1,10 @@
 {
   "devDependencies": {
     "playwright": "^1.61.1"
+  },
+  "dependencies": {
+    "dicom-parser": "^1.8.21",
+    "jpeg-lossless-decoder-js": "^2.1.2",
+    "jszip": "^3.10.1"
   }
 }

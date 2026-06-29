@@ -1,0 +1,45 @@
+<!doctype html><html><head><meta charset="utf-8"><title>DentalCT — static</title>
+<style>
+:root{--bg:#0b0d10;--pan:#13171c;--line:#222a33;--accent:#6cb6ff}
+*{box-sizing:border-box}body{margin:0;font:13px system-ui;background:var(--bg);color:#cdd6e0;height:100vh;display:flex;flex-direction:column}
+button{background:#1b222b;color:#cdd6e0;border:1px solid var(--line);border-radius:4px;padding:3px 9px;cursor:pointer}
+button.on{background:var(--accent);color:#000;border-color:var(--accent)}
+.bar{display:flex;gap:10px;align-items:center;padding:6px 14px;background:#0f1217;border-bottom:1px solid var(--line)}
+.tabs{display:flex;gap:6px;padding:5px 14px;background:#0f1217;border-bottom:1px solid var(--line)}
+.tab.on{background:var(--accent);color:#000;border-color:var(--accent)} .tabs .mono{margin-left:auto;color:#6b7480}
+.mono{font-family:ui-monospace,monospace} label{font-size:12px} input[type=range]{vertical-align:middle}
+#grid{flex:1;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:2px;background:#000;min-height:0}
+.pane{position:relative;overflow:hidden;display:flex;flex-direction:column}.head{font-size:11px;padding:2px 6px;color:#9aa3ad}
+.pane canvas{flex:1;width:100%;min-height:0;object-fit:contain;background:#000}
+#grid.max .pane{display:none}#grid.max .pane.big{display:flex}
+#drop{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px}
+#drop h1{font-weight:600}#drop .z{border:2px dashed var(--line);border-radius:12px;padding:48px 70px;text-align:center;cursor:pointer}
+#bar2{width:60%;height:6px;background:#222;border-radius:3px;overflow:hidden;display:none}#bar2 i{display:block;height:100%;width:0;background:var(--accent)}
+</style></head><body>
+<div class="bar">
+  <b>DentalCT</b><span class="mono" id="info">upload a CS 3D zip</span>
+  <label>WC <input id="wc" type="range" min="-1000" max="4000" value="1048"></label>
+  <label>WW <input id="ww" type="range" min="1" max="6000" value="4096"></label>
+  <label>Slab <input id="thk" type="range" min="1" max="40" value="1"></label>
+  <button data-wc="1048" data-ww="4096">Bone</button><button data-wc="400" data-ww="1500">Soft</button><button data-wc="2000" data-ww="4000">Teeth</button>
+</div>
+<div class="tabs">
+  <button class="tab on" data-tab="review">Review</button><button class="tab" data-tab="curved">Curved</button>
+  <button class="tab" data-tab="custom">Custom</button><button class="tab" data-tab="oblique">Oblique</button>
+  <span class="mono" id="note">drag=W/L · click=link</span>
+</div>
+<div id="drop"><h1>Dental CBCT viewer</h1><div class="z">Drop CS 3D <b>.zip</b> here or click<input id="file" type="file" accept=".zip" hidden></div><div id="bar2"><i></i></div></div>
+<div id="pano" style="display:none;flex:1;text-align:center;background:#000;overflow:auto"><canvas id="pc" style="max-width:98%;margin-top:8px"></canvas></div>
+<div id="custom" style="display:none;flex:1;background:#000;flex-direction:column;align-items:center;overflow:auto">
+  <canvas id="cp" style="width:62%;max-height:38vh;margin-top:6px"></canvas>
+  <input id="cspos" type="range" min="0" max="100" value="50" style="width:62%"><label><input id="cscanal" type="checkbox" checked> canal</label>
+  <canvas id="cc" style="max-height:42vh;image-rendering:pixelated"></canvas></div>
+<div id="oblique" style="display:none;flex:1;background:#000;flex-direction:column;align-items:center"><canvas id="oc" style="max-height:72vh;margin-top:8px"></canvas>
+  <div style="display:flex;gap:14px;padding:6px">Az<input id="az" type="range" min="-180" max="180" value="0">El<input id="el" type="range" min="-90" max="90" value="0">D<input id="od" type="range" min="-200" max="200" value="0"></div></div>
+<div id="grid" style="display:none">
+  <div class="pane" data-plane="axial"><div class="head">axial <span class="lbl"></span></div><canvas></canvas></div>
+  <div class="pane" data-plane="coronal"><div class="head">coronal <span class="lbl"></span></div><canvas></canvas></div>
+  <div class="pane" data-plane="sagittal"><div class="head">sagittal <span class="lbl"></span></div><canvas></canvas></div>
+  <div class="pane" data-plane="3d"><div class="head">3D · <button id="d3mode">Bone</button></div><canvas></canvas></div>
+</div>
+<script type="module" src="./app.js"></script></body></html>
