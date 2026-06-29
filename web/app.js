@@ -55,9 +55,9 @@ function link(cv,p){let dn=0;cv.addEventListener("mousedown",()=>dn=Date.now());
 
 // ---- tabs --------------------------------------------------------------
 function pano(){paint($("#pc"),S.smp.panoramic(S.ov.arch,S.wc,S.ww,Math.max(6,S.thk*2)));}
-function cross(){paint($("#cp"),S.smp.panoramic(S.ov.arch,S.wc,S.ww,8));paint($("#cc"),S.smp.cross(S.ov.arch,S.wc,S.ww,$("#cspos").value/100,70,600,$("#cscanal").checked?S.ov.canals:null));}
+function cross(){paint($("#cp"),S.smp.panoramic(S.ov.arch,S.wc,S.ww,8));paint($("#cc"),S.smp.cross(S.ov.arch,S.wc,S.ww,$("#cspos").value/100,70,600,S.ov.canals));}
 function ob(){paint($("#oc"),S.smp.oblique(S.wc,S.ww,+$("#az").value,+$("#el").value,+$("#od").value));}
-$("#cspos").oninput=cross;$("#cscanal").onchange=cross;["#az","#el","#od"].forEach(s=>$(s).oninput=ob);
+$("#cspos").oninput=cross;["#az","#el","#od"].forEach(s=>$(s).oninput=ob);
 document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{document.querySelectorAll(".tab").forEach(x=>x.classList.remove("on"));t.classList.add("on");
   const k=t.dataset.tab;$("#grid").style.display=k==="review"?"grid":"none";$("#pano").style.display=k==="curved"?"block":"none";
   $("#custom").style.display=k==="custom"?"flex":"none";$("#oblique").style.display=k==="oblique"?"flex":"none";
