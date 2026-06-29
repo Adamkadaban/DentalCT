@@ -54,6 +54,10 @@
   <span class="mono" id="tabnote">dbl-click a pane to maximize</span>
 </div>
 
+<div id="pano" style="display:none;flex:1;text-align:center;overflow:auto;background:#000">
+  <img id="panoimg" style="max-width:98%;margin-top:8px" alt="panoramic">
+  <div class="mono" id="panonote" style="padding:6px">slab thickness uses the Slab slider</div>
+</div>
 <div id="grid">
   <div class="pane" data-plane="axial">
     <div class="head">axial <span class="lbl"></span></div>
@@ -107,7 +111,7 @@ function refresh(p){
   panes[p].img.src="/api/slice?"+q+"&t="+Date.now();
   panes[p].lbl.textContent=`${S.idx[p]+1}/${S.meta.nslices[p]}`;
 }
-function refreshAll(){["axial","coronal","sagittal"].forEach(refresh);}
+function refreshAll(){["axial","coronal","sagittal"].forEach(refresh); if($("#pano").style.display!=="none") loadPano();}
 
 // ---- global controls ---------------------------------------------------
 $("#wc").oninput=e=>{S.wc=+e.target.value;$("#wcv").textContent=S.wc;refreshAll();};
@@ -150,14 +154,18 @@ document.querySelectorAll("#grid .pane").forEach(pane=>{
     if(renderer) renderer.draw();
   };
 });
-// ---- tabs (Review live; others explain the CBCT slicing modes) --------
+// ---- tabs (Review + Curved live; others explain CBCT slicing modes) ---
 const tabInfo={review:"4-pane overview (axial/coronal/sagittal + 3D)",
-  curved:"Panoramic: unrolls the dental arch curve into one strip — coming next",
+  curved:"Panoramic: arch curve unrolled into one strip — slab uses thickness slider",
   custom:"Custom slicing: cross-sections perpendicular to the arch — planned",
   oblique:"Oblique: free-angle reformats at any tilt — planned"};
+function loadPano(){ $("#panoimg").src=`/api/panoramic?wc=${S.wc}&ww=${S.ww}&thk=${Math.max(6,S.thk*2)}&t=`+Date.now(); }
 document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
   document.querySelectorAll(".tab").forEach(x=>x.classList.remove("on"));
   t.classList.add("on"); $("#tabnote").textContent=tabInfo[t.dataset.tab];
+  const cv=t.dataset.tab==="curved";
+  $("#pano").style.display=cv?"block":"none"; $("#grid").style.display=cv?"none":"grid";
+  if(cv) loadPano();
 });
 </script>
 </body>

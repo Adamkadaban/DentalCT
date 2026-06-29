@@ -50,3 +50,34 @@ def slice_image(vol, plane: str, idx: int, wc: float, ww: float,
 def downsampled(vol, factor: int = 3) -> np.ndarray:
     """Coarse int16 volume for 3D rendering (~every Nth voxel)."""
     return np.ascontiguousarray(vol[::factor, ::factor, ::factor])
+
+
+def _resample_curve(pts: np.ndarray, n: int) -> np.ndarray:
+    """Resample an (M,2) xy polyline to n points evenly by arc length."""
+    seg = np.linalg.norm(np.diff(pts, axis=0), axis=1)
+    s = np.concatenate([[0], np.cumsum(seg)])
+    u = np.linspace(0, s[-1], n)
+    x = np.interp(u, s, pts[:, 0]); y = np.interp(u, s, pts[:, 1])
+    return np.stack([x, y], 1)
+
+
+def panoramic(vol, arch_xy, wc, ww, thickness=10, samples=600):
+    """Curved/panoramic reconstruction: for each point along the arch, average
+    a slab ±thickness along the curve normal, over the full z height.
+    arch_xy: list of [x,y] in voxel index space. Returns 8-bit (z, samples)."""
+    z, y, x = vol.shape
+    pts = _resample_curve(np.asarray(arch_xy, float), samples)
+    tang = np.gradient(pts, axis=0)
+    nrm = np.stack([-tang[:, 1], tang[:, 0]], 1)
+    nrm /= (np.linalg.norm(nrm, axis=1, keepdims=True) + 1e-6)
+    offs = np.arange(-thickness, thickness + 1)
+    strip = np.zeros((z, samples), np.float32)
+    for o in offs:
+        sx = np.clip((pts[:, 0] + nrm[:, 0] * o).astype(int), 0, x - 1)
+        sy = np.clip((pts[:, 1] + nrm[:, 1] * o).astype(int), 0, y - 1)
+        strip += vol[:, sy, sx]
+    strip /= len(offs)
+    lo, hi = wc - ww / 2, wc + ww / 2
+    img = np.clip((strip - lo) / max(hi - lo, 1), 0, 1) * 255
+    return img.astype(np.uint8)[::-1]            # superior up
+
