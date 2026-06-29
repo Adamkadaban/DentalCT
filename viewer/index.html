@@ -43,7 +43,7 @@
   <button data-wc="400" data-ww="1500">Soft</button>
   <button data-wc="2000" data-ww="4000">Teeth</button>
   <button id="mode">AVG</button>
-  <span class="mono">drag pane = window/level</span>
+  <span class="mono">drag=W/L · click=link · shift-click×2=measure</span>
 </div>
 
 <div class="tabs">
@@ -112,7 +112,7 @@ async function init(){
     const n=m.nslices[p]; sl.max=n-1; sl.value=S.idx[p]=Math.floor(n/2);
     panes[p]={el,img,slider:sl,lbl:el.querySelector(".lbl")};
     sl.oninput=()=>{S.idx[p]=+sl.value; refresh(p);};
-    dragWL(img); refresh(p);
+    dragWL(img); link(img,p); refresh(p);
   }
   init3d();
 }
@@ -143,6 +143,30 @@ function dragWL(img){
     S.wc=Math.round(wc0+(e.clientY-y0)*4); S.ww=Math.max(1,Math.round(ww0+(e.clientX-x0)*8));
     set("#wc",S.wc,"#wcv");set("#ww",S.ww,"#wwv");refreshAll();});
   window.addEventListener("mouseup",()=>on=false);
+}
+
+// ---- click crosshair link + shift-click mm ruler ----------------------
+let ruler=null;                                   // {plane,fx,fy}
+function frac(img,e){const r=img.getBoundingClientRect();return [(e.clientX-r.left)/r.width,(e.clientY-r.top)/r.height];}
+function link(img,p){
+  let dn=0;
+  img.addEventListener("mousedown",()=>dn=Date.now());
+  img.addEventListener("click",e=>{
+    if(Date.now()-dn>250)return;                  // was a W/L drag, ignore
+    const m=S.meta.nslices, [fx,fy]=frac(img,e);
+    if(e.shiftKey){ measure(p,fx,fy); return; }
+    if(p==="axial"){S.idx.sagittal=fx*m.sagittal|0;S.idx.coronal=fy*m.coronal|0;}
+    if(p==="coronal"){S.idx.sagittal=fx*m.sagittal|0;S.idx.axial=(1-fy)*m.axial|0;}
+    if(p==="sagittal"){S.idx.coronal=fx*m.coronal|0;S.idx.axial=(1-fy)*m.axial|0;}
+    ["axial","coronal","sagittal"].forEach(q=>{panes[q].slider.value=S.idx[q];refresh(q);});
+  });
+}
+function measure(p,fx,fy){
+  const sp=S.meta.spacing_mm, d=[sp[0]*S.meta.nslices.sagittal,sp[1]*S.meta.nslices.coronal,sp[2]*S.meta.nslices.axial];
+  const mm=p==="axial"?[fx*d[0],fy*d[1]]:p==="coronal"?[fx*d[0],fy*d[2]]:[fx*d[1],fy*d[2]];
+  if(!ruler){ruler={p,mm};$("#tabnote").textContent="ruler: pick 2nd point";return;}
+  const e=Math.hypot(mm[0]-ruler.mm[0],mm[1]-ruler.mm[1]);
+  $("#tabnote").textContent=`distance ${e.toFixed(1)} mm`; ruler=null;
 }
 
 // ---- 4th pane: WebGL2 ray-marched 3D volume ---------------------------
