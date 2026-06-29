@@ -78,6 +78,15 @@ class H(BaseHTTPRequestHandler):
                                     float(q.get("ww", META["window_width"])),
                                     int(q.get("thk", 10)))
             return self._send(png(img), "image/png", {"Cache-Control": "no-cache"})
+        if p.startswith("/api/crosssec"):
+            arch = (OVR or {}).get("arch")
+            if not arch:
+                return self.send_error(404)
+            xy = [[pt[0], pt[1]] for pt in arch]
+            img = sampler.cross_section(VOL, xy, float(q.get("wc", META["window_center"])),
+                                        float(q.get("ww", META["window_width"])),
+                                        float(q.get("pos", 0.5)))
+            return self._send(png(img), "image/png", {"Cache-Control": "no-cache"})
         if p.startswith("/api/volume3d"):
             f = int(q.get("factor", 3))
             ds = sampler.downsampled(VOL, f)

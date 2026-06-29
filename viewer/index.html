@@ -58,6 +58,11 @@
   <img id="panoimg" style="max-width:98%;margin-top:8px" alt="panoramic">
   <div class="mono" id="panonote" style="padding:6px">slab thickness uses the Slab slider</div>
 </div>
+<div id="custom" style="display:none;flex:1;background:#000;flex-direction:column;align-items:center;overflow:auto">
+  <img id="cspano" style="width:62%;max-height:38vh;margin-top:6px" alt="arch">
+  <input id="cspos" type="range" min="0" max="100" value="50" style="width:62%;margin:4px">
+  <img id="csimg" style="max-height:42vh;image-rendering:pixelated" alt="cross-section">
+</div>
 <div id="grid">
   <div class="pane" data-plane="axial">
     <div class="head">axial <span class="lbl"></span></div>
@@ -111,7 +116,7 @@ function refresh(p){
   panes[p].img.src="/api/slice?"+q+"&t="+Date.now();
   panes[p].lbl.textContent=`${S.idx[p]+1}/${S.meta.nslices[p]}`;
 }
-function refreshAll(){["axial","coronal","sagittal"].forEach(refresh); if($("#pano").style.display!=="none") loadPano();}
+function refreshAll(){["axial","coronal","sagittal"].forEach(refresh); if($("#pano").style.display!=="none") loadPano(); if($("#custom").style.display!=="none") loadCross();}
 
 // ---- global controls ---------------------------------------------------
 $("#wc").oninput=e=>{S.wc=+e.target.value;$("#wcv").textContent=S.wc;refreshAll();};
@@ -157,15 +162,20 @@ document.querySelectorAll("#grid .pane").forEach(pane=>{
 // ---- tabs (Review + Curved live; others explain CBCT slicing modes) ---
 const tabInfo={review:"4-pane overview (axial/coronal/sagittal + 3D)",
   curved:"Panoramic: arch curve unrolled into one strip — slab uses thickness slider",
-  custom:"Custom slicing: cross-sections perpendicular to the arch — planned",
+  custom:"Custom slicing: buccal-lingual cross-sections perpendicular to the arch — scrub position",
   oblique:"Oblique: free-angle reformats at any tilt — planned"};
 function loadPano(){ $("#panoimg").src=`/api/panoramic?wc=${S.wc}&ww=${S.ww}&thk=${Math.max(6,S.thk*2)}&t=`+Date.now(); }
+function loadCross(){ const v=$("#cspos").value/100;
+  $("#cspano").src=`/api/panoramic?wc=${S.wc}&ww=${S.ww}&thk=8&t=`+Date.now();
+  $("#csimg").src=`/api/crosssec?pos=${v}&wc=${S.wc}&ww=${S.ww}&t=`+Date.now(); }
+$("#cspos").oninput=loadCross;
 document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
   document.querySelectorAll(".tab").forEach(x=>x.classList.remove("on"));
   t.classList.add("on"); $("#tabnote").textContent=tabInfo[t.dataset.tab];
-  const cv=t.dataset.tab==="curved";
-  $("#pano").style.display=cv?"block":"none"; $("#grid").style.display=cv?"none":"grid";
-  if(cv) loadPano();
+  const tab=t.dataset.tab, cv=tab==="curved", cu=tab==="custom", g=!cv&&!cu;
+  $("#pano").style.display=cv?"block":"none"; $("#custom").style.display=cu?"flex":"none";
+  $("#grid").style.display=g?"grid":"none";
+  if(cv) loadPano(); if(cu) loadCross();
 });
 </script>
 </body>

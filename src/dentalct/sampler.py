@@ -81,3 +81,20 @@ def panoramic(vol, arch_xy, wc, ww, thickness=10, samples=600):
     img = np.clip((strip - lo) / max(hi - lo, 1), 0, 1) * 255
     return img.astype(np.uint8)[::-1]            # superior up
 
+
+def cross_section(vol, arch_xy, wc, ww, pos=0.5, half=70, samples=600):
+    """One buccal-lingual cross-section perpendicular to the arch at fractional
+    position pos (0..1). Returns 8-bit (z, 2*half) image, superior up."""
+    z, y, x = vol.shape
+    pts = _resample_curve(np.asarray(arch_xy, float), samples)
+    tang = np.gradient(pts, axis=0)
+    nrm = np.stack([-tang[:, 1], tang[:, 0]], 1)
+    nrm /= (np.linalg.norm(nrm, axis=1, keepdims=True) + 1e-6)
+    i = int(np.clip(pos, 0, 1) * (samples - 1)); cx, cy = pts[i]; nx, ny = nrm[i]
+    o = np.arange(-half, half)
+    sx = np.clip((cx + nx * o).astype(int), 0, x - 1)
+    sy = np.clip((cy + ny * o).astype(int), 0, y - 1)
+    img = vol[:, sy, sx].astype(np.float32)
+    lo, hi = wc - ww / 2, wc + ww / 2
+    return (np.clip((img - lo) / max(hi - lo, 1), 0, 1) * 255).astype(np.uint8)[::-1]
+
