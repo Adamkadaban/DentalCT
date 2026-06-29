@@ -11,7 +11,7 @@ button.on{background:var(--accent);color:#000;border-color:var(--accent)}
 #grid{flex:1;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:2px;background:#000;min-height:0}
 .pane{position:relative;overflow:hidden;display:flex;flex-direction:column}.head{font-size:11px;padding:2px 6px;color:#9aa3ad}
 .pane canvas{flex:1;width:100%;min-height:0;object-fit:contain;background:#000}
-.pane .sl{width:96%;margin:3px auto;accent-color:var(--accent)}
+.pane .sl{width:96%;margin:4px auto 6px;height:14px;accent-color:var(--accent)}
 #grid.max .pane{display:none}#grid.max .pane.big{display:flex}
 #drop{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px}
 #drop h1{font-weight:600}#drop .z{border:2px dashed var(--line);border-radius:12px;padding:48px 70px;text-align:center;cursor:pointer}
@@ -27,7 +27,7 @@ button.on{background:var(--accent);color:#000;border-color:var(--accent)}
 <div class="tabs">
   <button class="tab on" data-tab="review">Review</button><button class="tab" data-tab="curved">Curved</button>
   <button class="tab" data-tab="custom">Custom</button><button class="tab" data-tab="oblique">Oblique</button>
-  <span class="mono" id="note">drag=W/L · click=link</span>
+  <span class="mono" id="note">scroll/slider=slice · drag=W/L · click=crosshair</span>
 </div>
 <div id="drop"><h1>Dental CBCT viewer</h1><div class="z">Drop CS 3D <b>.zip</b> here or click<input id="file" type="file" accept=".zip" hidden></div><div id="bar2"><i></i></div>
   <p class="mono" style="color:#7fd18a;text-align:center;margin:0">🔒 100% private — your scan is decoded in your browser and never uploaded anywhere.</p>
@@ -43,6 +43,6 @@ button.on{background:var(--accent);color:#000;border-color:var(--accent)}
   <div class="pane" data-plane="axial"><div class="head">axial <span class="lbl"></span></div><canvas></canvas><input class="sl" type="range" min="0" value="0"></div>
   <div class="pane" data-plane="coronal"><div class="head">coronal <span class="lbl"></span></div><canvas></canvas><input class="sl" type="range" min="0" value="0"></div>
   <div class="pane" data-plane="sagittal"><div class="head">sagittal <span class="lbl"></span></div><canvas></canvas><input class="sl" type="range" min="0" value="0"></div>
-  <div class="pane" data-plane="3d"><div class="head">3D · <button id="d3mode">Bone</button></div><canvas></canvas><input id="d3thr" type="range" min="5" max="95" value="35"></div>
+  <div class="pane" data-plane="3d"><div class="head">3D · <button id="d3mode">Bone</button></div><canvas></canvas></div>
 </div>
 <script type="module" src="./app.js"></script></body></html>

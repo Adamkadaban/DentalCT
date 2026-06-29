@@ -1,22 +1,32 @@
-# DentalCT
+<h1 align="center">DentalCT</h1>
+<p align="center">A dental CBCT viewer that runs entirely in your browser.</p>
+<p align="center">
+  <a href="https://3dct.hackback.zip"><img alt="live" src="https://img.shields.io/badge/live-3dct.hackback.zip-6cb6ff"></a>
+  <a href="./LICENSE"><img alt="License" src="https://img.shields.io/badge/license-MIT-blue"></a>
+  <img alt="100% local" src="https://img.shields.io/badge/data-100%25_local-7fd18a">
+  <img alt="made with vibes" src="https://img.shields.io/badge/made_with-vibes-ff69b4">
+</p>
 
-Reader & visualizer for a Carestream **CS 8100 3D** CBCT scan exported by
-**CS 3D Imaging** (a folder of JPEG-lossless DICOM slices). Tri-planar MPR +
-3D rendering, like dental CT software.
+Drop a Carestream **CS 3D Imaging** export (`.zip` of JPEG-lossless DICOMs) and
+get tri-planar MPR, a cinematic 3D volume, panoramic, implant cross-sections
+with nerve canal, and oblique reformats. No upload, no install — the scan is
+decoded and rendered locally and never leaves your machine.
 
-> The DICOM data is real patient PHI and is git-ignored. Keep it local.
+## Use it
 
-## Quick start
+Open **[3dct.hackback.zip](https://3dct.hackback.zip)** and drop your zip. That's it.
+
+## Run locally
+
 ```bash
-uv venv && . .venv/bin/activate
-uv pip install -e .
-dentalct-server VOL_0          # decodes once, caches, serves at :8000
-# open http://localhost:8000
+cd web && python3 -m http.server 8000   # static, no backend
 ```
 
-## Layout
-- `src/dentalct/` — loader, MPR sampler, HTTP server
-- `viewer/` — browser UI (axial/coronal/sagittal + 3D)
-- `docs/notes/` — engineering notes;  `docs/adr/` — architecture decisions
+There's also a Python reference build (`uv pip install -e .` → `dentalct-server VOL_0`).
 
-See `docs/notes/01-dataset.md` for the decoded scan specifics.
+## Layout
+- `web/` — the static site (zip → decode → viewer), deployed via Pages
+- `src/dentalct/` — Python reference: loader, MPR sampler, server
+- `docs/adr/`, `docs/notes/` — decisions & engineering notes
+
+Patient DICOMs are PHI and git-ignored.

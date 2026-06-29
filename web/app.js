@@ -25,13 +25,14 @@ function start(vol, meta){
   $("#info").textContent=`${meta.model} · ${x}×${y}×${z} · ${meta.spacing_mm.map(v=>v.toFixed(2)).join("×")}mm`;
   ["axial","coronal","sagittal"].forEach(p=>{const pane=document.querySelector(`.pane[data-plane="${p}"]`);
     pane._cv=pane.querySelector("canvas"); const sl=pane.querySelector(".sl"); sl.max=S.smp.nslices[p]-1; sl.value=S.idx[p];
-    sl.oninput=()=>{S.idx[p]=+sl.value; draw(p);}; pane._sl=sl; link(pane._cv,p); drawWL(pane._cv); draw(p);});
+    sl.oninput=()=>{S.idx[p]=+sl.value; draw(p);}; pane._sl=sl; link(pane._cv,p); drawWL(pane._cv);
+    pane._cv.addEventListener("wheel",e=>{e.preventDefault();S.idx[p]=Math.max(0,Math.min(S.smp.nslices[p]-1,S.idx[p]+(e.deltaY>0?1:-1)));draw(p);},{passive:false});
+    draw(p);});
   // downsample for 3D
   const f=2,dz=z+1>>1,dy=y+1>>1,dx=x+1>>1,d=new Int16Array(dz*dy*dx);
   for(let k=0;k<dz;k++)for(let j=0;j<dy;j++)for(let i=0;i<dx;i++)d[(k*dy+j)*dx+i]=vol[((k*2)*y+j*2)*x+i*2];
   initVolume(document.querySelector('.pane[data-plane="3d"] canvas'),$("#info"),{vol:d,z:dz,y:dy,x:dx})
-    .then(r=>{S.r=r; $("#d3mode").onclick=e=>{const m=e.target.textContent==="Bone";e.target.textContent=m?"MIP":"Bone";r.setMode(m?1:0);};
-      $("#d3thr").oninput=e=>r.setThr(+e.target.value/100);});
+    .then(r=>{S.r=r; $("#d3mode").onclick=e=>{const m=e.target.textContent==="Bone";e.target.textContent=m?"MIP":"Bone";r.setMode(m?1:0);};});
 }
 function paint(cv,img){cv.width=img.width;cv.height=img.height;cv.getContext("2d").putImageData(img,0,0);}
 function draw(p){paint(document.querySelector(`.pane[data-plane="${p}"] canvas`),S.smp.slice(p,S.idx[p],S.wc,S.ww));
