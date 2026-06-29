@@ -1,0 +1,25 @@
+# --- Patient data: NEVER commit (PHI) ---
+*.zip
+VOL_0/
+data/
+*.dcm
+*.dat
+*.serie
+*.raw
+*.npy
+*.nii
+*.nii.gz
+
+# --- Python ---
+.venv/
+__pycache__/
+*.pyc
+*.egg-info/
+.ruff_cache/
+
+# --- Node / web ---
+node_modules/
+viewer/dist/
+
+# --- OS ---
+.DS_Store
