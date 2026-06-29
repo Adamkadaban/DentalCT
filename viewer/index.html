@@ -61,6 +61,7 @@
 <div id="custom" style="display:none;flex:1;background:#000;flex-direction:column;align-items:center;overflow:auto">
   <img id="cspano" style="width:62%;max-height:38vh;margin-top:6px" alt="arch">
   <input id="cspos" type="range" min="0" max="100" value="50" style="width:62%;margin:4px">
+  <label class="mono" style="color:#9aa3ad"><input id="cscanal" type="checkbox" checked> nerve canal</label>
   <img id="csimg" style="max-height:42vh;image-rendering:pixelated" alt="cross-section">
 </div>
 <div id="oblique" style="display:none;flex:1;background:#000;flex-direction:column;align-items:center;overflow:auto">
@@ -197,10 +198,10 @@ const tabInfo={review:"4-pane overview (axial/coronal/sagittal + 3D)",
   custom:"Custom slicing: buccal-lingual cross-sections perpendicular to the arch — scrub position",
   oblique:"Oblique: free-angle reformats — drag Az/El/Depth to cut any plane"};
 function loadPano(){ $("#panoimg").src=`/api/panoramic?wc=${S.wc}&ww=${S.ww}&thk=${Math.max(6,S.thk*2)}&t=`+Date.now(); }
-function loadCross(){ const v=$("#cspos").value/100;
+function loadCross(){ const v=$("#cspos").value/100, cn=$("#cscanal").checked?"&canal=1":"";
   $("#cspano").src=`/api/panoramic?wc=${S.wc}&ww=${S.ww}&thk=8&t=`+Date.now();
-  $("#csimg").src=`/api/crosssec?pos=${v}&wc=${S.wc}&ww=${S.ww}&t=`+Date.now(); }
-$("#cspos").oninput=loadCross;
+  $("#csimg").src=`/api/crosssec?pos=${v}&wc=${S.wc}&ww=${S.ww}${cn}&t=`+Date.now(); }
+$("#cspos").oninput=loadCross; $("#cscanal").onchange=loadCross;
 function loadOb(){ $("#obimg").src=`/api/oblique?az=${$("#obaz").value}&el=${$("#obel").value}&depth=${$("#obdep").value}&wc=${S.wc}&ww=${S.ww}&t=`+Date.now(); }
 ["#obaz","#obel","#obdep"].forEach(s=>$(s).oninput=loadOb);
 document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{

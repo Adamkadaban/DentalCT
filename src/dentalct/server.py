@@ -30,13 +30,14 @@ OVR = None
 
 
 def png(gray: np.ndarray) -> bytes:
-    h, w = gray.shape
+    rgb = gray.ndim == 3
+    h, w = gray.shape[:2]
     raw = b"".join(b"\x00" + gray[r].tobytes() for r in range(h))
     def chunk(t, d):
         c = t + d
         return struct.pack(">I", len(d)) + c + struct.pack(">I", zlib.crc32(c) & 0xffffffff)
     sig = b"\x89PNG\r\n\x1a\n"
-    ihdr = struct.pack(">IIBBBBB", w, h, 8, 0, 0, 0, 0)
+    ihdr = struct.pack(">IIBBBBB", w, h, 8, 2 if rgb else 0, 0, 0, 0)
     return sig + chunk(b"IHDR", ihdr) + chunk(b"IDAT", zlib.compress(raw, 6)) + chunk(b"IEND", b"")
 
 
@@ -85,7 +86,8 @@ class H(BaseHTTPRequestHandler):
             xy = [[pt[0], pt[1]] for pt in arch]
             img = sampler.cross_section(VOL, xy, float(q.get("wc", META["window_center"])),
                                         float(q.get("ww", META["window_width"])),
-                                        float(q.get("pos", 0.5)))
+                                        float(q.get("pos", 0.5)),
+                                        canals=(OVR or {}).get("canals") if q.get("canal") else None)
             return self._send(png(img), "image/png", {"Cache-Control": "no-cache"})
         if p.startswith("/api/oblique"):
             img = sampler.oblique(VOL, float(q.get("wc", META["window_center"])),

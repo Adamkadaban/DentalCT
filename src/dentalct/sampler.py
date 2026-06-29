@@ -82,9 +82,10 @@ def panoramic(vol, arch_xy, wc, ww, thickness=10, samples=600):
     return img.astype(np.uint8)[::-1]            # superior up
 
 
-def cross_section(vol, arch_xy, wc, ww, pos=0.5, half=70, samples=600):
+def cross_section(vol, arch_xy, wc, ww, pos=0.5, half=70, samples=600, canals=None):
     """One buccal-lingual cross-section perpendicular to the arch at fractional
-    position pos (0..1). Returns 8-bit (z, 2*half) image, superior up."""
+    position pos (0..1). Returns 8-bit (z, 2*half) image, superior up.
+    If canals given, overlays nerve canal where it crosses the cut (RGB)."""
     z, y, x = vol.shape
     pts = _resample_curve(np.asarray(arch_xy, float), samples)
     tang = np.gradient(pts, axis=0)
@@ -96,7 +97,27 @@ def cross_section(vol, arch_xy, wc, ww, pos=0.5, half=70, samples=600):
     sy = np.clip((cy + ny * o).astype(int), 0, y - 1)
     img = vol[:, sy, sx].astype(np.float32)
     lo, hi = wc - ww / 2, wc + ww / 2
-    return (np.clip((img - lo) / max(hi - lo, 1), 0, 1) * 255).astype(np.uint8)[::-1]
+    g = (np.clip((img - lo) / max(hi - lo, 1), 0, 1) * 255).astype(np.uint8)[::-1]
+    if not canals:
+        return g
+    out = np.stack([g, g, g], -1)                    # to RGB
+    tx, ty = pts[i] - pts[max(i - 1, 0)]; tl = (tx*tx+ty*ty) ** .5 + 1e-6
+    for cn in canals:
+        p = np.asarray(cn["points"], float)
+        t = np.linspace(0, 1, len(p)); td = np.linspace(0, 1, len(p) * 40)
+        dense = np.stack([np.interp(td, t, p[:, k]) for k in range(3)], 1)
+        for px, py, pz in dense:
+            along = ((px-cx)*tx + (py-cy)*ty) / tl   # dist along arch from cut
+            off = (px-cx)*nx + (py-cy)*ny            # buccal-lingual offset
+            if abs(along) < 4 and abs(off) < half:
+                col = int(off + half); row = z - 1 - int(pz)
+                rr = max(2, int(cn.get("radius", 1.25) / 0.15))
+                for dy in range(-rr, rr + 1):
+                    for dx in range(-rr, rr + 1):
+                        if dx*dx+dy*dy <= rr*rr:
+                            r, c = row+dy, col+dx
+                            if 0 <= r < z and 0 <= c < 2*half: out[r, c] = [255, 128, 0]
+    return out
 
 
 def oblique(vol, wc, ww, az=0.0, el=0.0, depth=0.0, size=400):
