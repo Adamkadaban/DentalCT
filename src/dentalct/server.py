@@ -87,6 +87,12 @@ class H(BaseHTTPRequestHandler):
                                         float(q.get("ww", META["window_width"])),
                                         float(q.get("pos", 0.5)))
             return self._send(png(img), "image/png", {"Cache-Control": "no-cache"})
+        if p.startswith("/api/oblique"):
+            img = sampler.oblique(VOL, float(q.get("wc", META["window_center"])),
+                                  float(q.get("ww", META["window_width"])),
+                                  float(q.get("az", 0)), float(q.get("el", 0)),
+                                  float(q.get("depth", 0)))
+            return self._send(png(img), "image/png", {"Cache-Control": "no-cache"})
         if p.startswith("/api/volume3d"):
             f = int(q.get("factor", 3))
             ds = sampler.downsampled(VOL, f)

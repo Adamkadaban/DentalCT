@@ -98,3 +98,25 @@ def cross_section(vol, arch_xy, wc, ww, pos=0.5, half=70, samples=600):
     lo, hi = wc - ww / 2, wc + ww / 2
     return (np.clip((img - lo) / max(hi - lo, 1), 0, 1) * 255).astype(np.uint8)[::-1]
 
+
+def oblique(vol, wc, ww, az=0.0, el=0.0, depth=0.0, size=400):
+    """Free-angle reformat: a plane through the volume centre, rotated by
+    azimuth/elevation (deg), shifted along its normal by depth (voxels).
+    az tilts about z (axial), el lifts the plane. Returns 8-bit (size,size)."""
+    z, y, x = vol.shape
+    a, e = np.radians(az), np.radians(el)
+    n = np.array([np.cos(e) * np.cos(a), np.cos(e) * np.sin(a), np.sin(e)])  # xyz
+    u = np.array([-np.sin(a), np.cos(a), 0.0])                # in-plane horizontal
+    v = np.cross(n, u)                                        # in-plane vertical
+    c = np.array([x, y, z]) / 2 + n * depth
+    g = np.linspace(-size / 2, size / 2, size)
+    gu, gv = np.meshgrid(g, g)
+    px = c[0] + gu * u[0] + gv * v[0]
+    py = c[1] + gu * u[1] + gv * v[1]
+    pz = c[2] + gu * u[2] + gv * v[2]
+    xi = np.clip(px.astype(int), 0, x - 1); yi = np.clip(py.astype(int), 0, y - 1)
+    zi = np.clip(pz.astype(int), 0, z - 1)
+    img = vol[zi, yi, xi].astype(np.float32)
+    lo, hi = wc - ww / 2, wc + ww / 2
+    return (np.clip((img - lo) / max(hi - lo, 1), 0, 1) * 255).astype(np.uint8)[::-1]
+

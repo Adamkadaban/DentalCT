@@ -63,6 +63,14 @@
   <input id="cspos" type="range" min="0" max="100" value="50" style="width:62%;margin:4px">
   <img id="csimg" style="max-height:42vh;image-rendering:pixelated" alt="cross-section">
 </div>
+<div id="oblique" style="display:none;flex:1;background:#000;flex-direction:column;align-items:center;overflow:auto">
+  <img id="obimg" style="max-height:72vh;margin-top:8px" alt="oblique">
+  <div class="mono" style="display:flex;gap:14px;padding:6px;width:80%;justify-content:center">
+    <label>Az <input id="obaz" type="range" min="-180" max="180" value="0"></label>
+    <label>El <input id="obel" type="range" min="-90" max="90" value="0"></label>
+    <label>Depth <input id="obdep" type="range" min="-200" max="200" value="0"></label>
+  </div>
+</div>
 <div id="grid">
   <div class="pane" data-plane="axial">
     <div class="head">axial <span class="lbl"></span></div>
@@ -116,7 +124,7 @@ function refresh(p){
   panes[p].img.src="/api/slice?"+q+"&t="+Date.now();
   panes[p].lbl.textContent=`${S.idx[p]+1}/${S.meta.nslices[p]}`;
 }
-function refreshAll(){["axial","coronal","sagittal"].forEach(refresh); if($("#pano").style.display!=="none") loadPano(); if($("#custom").style.display!=="none") loadCross();}
+function refreshAll(){["axial","coronal","sagittal"].forEach(refresh); if($("#pano").style.display!=="none") loadPano(); if($("#custom").style.display!=="none") loadCross(); if($("#oblique").style.display!=="none") loadOb();}
 
 // ---- global controls ---------------------------------------------------
 $("#wc").oninput=e=>{S.wc=+e.target.value;$("#wcv").textContent=S.wc;refreshAll();};
@@ -163,19 +171,21 @@ document.querySelectorAll("#grid .pane").forEach(pane=>{
 const tabInfo={review:"4-pane overview (axial/coronal/sagittal + 3D)",
   curved:"Panoramic: arch curve unrolled into one strip — slab uses thickness slider",
   custom:"Custom slicing: buccal-lingual cross-sections perpendicular to the arch — scrub position",
-  oblique:"Oblique: free-angle reformats at any tilt — planned"};
+  oblique:"Oblique: free-angle reformats — drag Az/El/Depth to cut any plane"};
 function loadPano(){ $("#panoimg").src=`/api/panoramic?wc=${S.wc}&ww=${S.ww}&thk=${Math.max(6,S.thk*2)}&t=`+Date.now(); }
 function loadCross(){ const v=$("#cspos").value/100;
   $("#cspano").src=`/api/panoramic?wc=${S.wc}&ww=${S.ww}&thk=8&t=`+Date.now();
   $("#csimg").src=`/api/crosssec?pos=${v}&wc=${S.wc}&ww=${S.ww}&t=`+Date.now(); }
 $("#cspos").oninput=loadCross;
+function loadOb(){ $("#obimg").src=`/api/oblique?az=${$("#obaz").value}&el=${$("#obel").value}&depth=${$("#obdep").value}&wc=${S.wc}&ww=${S.ww}&t=`+Date.now(); }
+["#obaz","#obel","#obdep"].forEach(s=>$(s).oninput=loadOb);
 document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
   document.querySelectorAll(".tab").forEach(x=>x.classList.remove("on"));
   t.classList.add("on"); $("#tabnote").textContent=tabInfo[t.dataset.tab];
-  const tab=t.dataset.tab, cv=tab==="curved", cu=tab==="custom", g=!cv&&!cu;
+  const tab=t.dataset.tab, cv=tab==="curved", cu=tab==="custom", ob=tab==="oblique", g=tab==="review";
   $("#pano").style.display=cv?"block":"none"; $("#custom").style.display=cu?"flex":"none";
-  $("#grid").style.display=g?"grid":"none";
-  if(cv) loadPano(); if(cu) loadCross();
+  $("#oblique").style.display=ob?"flex":"none"; $("#grid").style.display=g?"grid":"none";
+  if(cv) loadPano(); if(cu) loadCross(); if(ob) loadOb();
 });
 </script>
 </body>
